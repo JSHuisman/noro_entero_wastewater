@@ -18,14 +18,13 @@ theme_set(theme_minimal() +
 ###########################################################
 ## Read in raw wastewater data for NoV GII and EV ####
 
-raw_data <- read_xlsx('../data/Wise_wastewater_data.xlsx', sheet = 'Data', skip = 2,
-                      na = c('#VALUE!', 'NA'))
+raw_data <- read_xlsx('../data/wastewater_data.xlsx', na = c('#VALUE!', 'NA'))
 
 # Rename columns and filter out NA load values
 core_data <- raw_data %>%
-  select(date, replicate, flow = `flowrate_(kL/day)`, 
-         nov_conc = `NoV GII...12`, ev_conc = `EV...13`, 
-         nov_load = `NoVG II`, ev_load = `EV...16`) %>%
+  select(date, flow = `flowrate_(kL/day)`, 
+         nov_conc = `NoV GII concentration (gc/mL)`, ev_conc = `EV concentration (gc/mL)`, 
+         nov_load = `NoVG II load (gc/day)`, ev_load = `EV load (gc/day)`) %>%
   mutate(date = as_date(date)) %>%
   filter(!is.na(nov_load) & !is.na(ev_load)) %>%
   mutate(flow = as.numeric(flow),

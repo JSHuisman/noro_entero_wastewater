@@ -1,6 +1,10 @@
 ###########################################################
 ## Combined clinical data
 ## Author: J S Huisman
+
+## Note: what is referred to as USZ (University hospital Zurich)
+# actually stems from the Institute of Medical Virology of the University of Zurich
+# and includes some externally ordered tests
 ###########################################################
 
 library(tidyverse)
@@ -27,8 +31,10 @@ USZ_count_data <- USZ_raw_data %>%
          week_n = week(week_date) ) %>%
   group_by(month_year, month_n, year_n, virus, result, specimen_category) %>% 
   summarize(n_cases = n()) %>%
-  mutate(hospital = 'USZ') %>%
+  mutate(hospital = 'IMV/UZH') %>%
   mutate(virus = factor(virus, levels = c('Norovirus', 'Enterovirus', 'SARS-CoV-2')) )
+
+write_csv(USZ_count_data, '../proc_data/USZ_monthly.csv')
 
 ##### Option 2: Rolling count of cases (daily) #####
 
@@ -60,8 +66,10 @@ USZ_daily_count <- USZ_raw_data %>%
   full_join(USZ_total_daily, by = c('date', 'collection_date', 'virus')) %>%
   full_join(USZ_total_gastro_daily, by = c('date', 'collection_date', 'virus')) %>%
   mutate(virus = factor(virus, levels = c('Norovirus', 'Enterovirus', 'SARS-CoV-2')),
-         hospital = 'USZ') %>%
+         hospital = 'IMV/UZH') %>%
   select(-collection_date, -specimen_category) 
+
+write_csv(USZ_daily_count, '../proc_data/USZ_daily.csv')
 
 # Smooth the positive tests over a 21 day window
 USZ_smooth_count <- USZ_daily_count %>%
@@ -252,6 +260,7 @@ ggsave('../figures/HUG_cases_yearly.png', width = 8, height = 6)
 ###### Combined clinical data for plotting ################
 
 clinical_data <- bind_rows(USZ_count_data, HUG_count_data) %>%
+  mutate(hospital = ifelse(hospital == 'USZ', 'IMV/UZH', 'HUG')) %>%
   filter(virus %in% c('Enterovirus', 'Norovirus'),
          result == 'positive', 
          specimen_category %in% c('gastrointestinal', NA),
@@ -260,7 +269,7 @@ clinical_data <- bind_rows(USZ_count_data, HUG_count_data) %>%
   ungroup() %>%
   select(-analysis_method, -specimen_category, - covid, -result) %>%
   full_join(crossing(month_n = seq(1, 12), year_n = c(2020, 2021, 2022), 
-                     virus = c('Norovirus', 'Enterovirus'), hospital = c('HUG', 'USZ')), 
+                     virus = c('Norovirus', 'Enterovirus'), hospital = c('HUG', 'IMV/UZH')), 
             by = c('year_n', 'month_n', 'virus', 'hospital')) %>%
   mutate(month_year = ym(paste0(year_n, '-', month_n)),
          n_cases = ifelse(is.na(n_cases), 0, n_cases)) %>%
